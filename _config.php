@@ -22,5 +22,3 @@
  *	));
  * </code>
  */
-
-Commenting::add('SiteTree');
