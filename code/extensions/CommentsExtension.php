@@ -6,7 +6,7 @@
  * @package comments
  */
 
-class CommentsExtension extends DataObjectDecorator {
+class CommentsExtension extends DataExtension {
 	
 	/**
 	 * Adds a relationship between this {@link DataObject} and its
