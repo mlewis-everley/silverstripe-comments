@@ -61,11 +61,11 @@ class CommentingController extends Controller {
 			if($comment && $comment->canDelete()) {
 				$comment->delete();
 				
-				return ($this->isAjax()) ? true : $this->redirectBack();
+				return ($this->request->isAjax()) ? true : $this->redirectBack();
 			}
 		}
 
-		return ($this->isAjax()) ? false : $this->httpError('404');
+		return ($this->request->isAjax()) ? false : $this->httpError('404');
 	}
 	
 	/**
@@ -76,7 +76,7 @@ class CommentingController extends Controller {
 	function CommentsForm() {
 		
 		$member = Member::currentUser();
-		$fields = new FieldSet(
+		$fields = new FieldList(
 			new TextField("Name", _t('CommentInterface.YOURNAME', 'Your name')),
 			new EmailField("Email", _t('CommentingController.EMAILADDRESS', "Your email address (will not be published)")),
 			new TextField("URL", _t('CommentingController.WEBSITEURL', "Your website URL")),
@@ -87,7 +87,7 @@ class CommentingController extends Controller {
 		);
 
 		// save actions
-		$actions = new FieldSet(
+		$actions = new FieldList(
 			new FormAction("doPostComment", _t('CommentInterface.POST', 'Post'))
 		);
 
@@ -134,7 +134,7 @@ class CommentingController extends Controller {
 
 		// load any data from the cookies
 		if($data = Cookie::get('CommentsForm_UserData')) {
-			$data = unserialize($data); 
+			$data = Convert::json2array($data); 
 			
 			$form->loadDataFrom(array(
 				"Name"		=> isset($data['Name']) ? $data['Name'] : '',
@@ -164,7 +164,7 @@ class CommentingController extends Controller {
 		if(!$class) user_error("No OwnerClass set on CommentingController.", E_USER_ERROR);
 		
 		// cache users data
-		Cookie::set("CommentsForm_UserData", serialize($data));
+		Cookie::set("CommentsForm_UserData", Convert::raw2json($data));
 		Cookie::set("CommentsForm_Comment", $data['Comment']);
 		
 		// extend hook to allow extensions. Also see onAfterPostComment
