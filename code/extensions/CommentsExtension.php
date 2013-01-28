@@ -52,23 +52,26 @@ class CommentsExtension extends DataExtension {
 	 * @return PaginatedList
 	 */
 	public function Comments() {
-		$controller = Controller::curr();
-
 		$order = Commenting::get_config_value($this->ownerBaseClass, 'order_comments_by');
 
-		// has moderation been turned on if it has amend the sql query
-		$moderation = '';
-		if (Commenting::get_config_value($this->ownerBaseClass, 'require_moderation')) {
-		
-			$member = new Member();
-			if ($member->currentUser() == false) {
-				$moderation = 'Moderated = 1 AND ';
+		$list = Comment::get()->filter(array(
+			'ParentID' => $this->owner->ID,
+			'BaseClass' => $this->ownerBaseClass
+		))->sort($order);
+
+		// Filter content for unauthorised users
+		if (!($member = Member::currentUser()) || !Permission::checkMember($member, 'CMS_ACCESS_CommentAdmin')) {
+			
+			// Filter unmoderated comments for non-administrators if moderation is enabled
+			if (Commenting::get_config_value($this->ownerBaseClass, 'require_moderation')) {
+				$list = $list->filter('Moderated', 1);
+			} else {
+				// Filter spam comments for non-administrators if auto-moderted
+				$list = $list->filter('IsSpam', 0);
 			}
 		}
 
-		$list = new PaginatedList(Comment::get()->where(sprintf(
-			$moderation . "ParentID = '%s' AND BaseClass = '%s'", $this->owner->ID, $this->ownerBaseClass
-		))->sort($order));
+		$list = new PaginatedList($list);
 
 		$list->setPageLength(Commenting::get_config_value(
 			$this->ownerBaseClass, 'comments_per_page'
@@ -123,6 +126,7 @@ class CommentsExtension extends DataExtension {
 			'RssLink'					=> "CommentingController/rss",
 			'RssLinkPage'				=> "CommentingController/rss/". $this->ownerBaseClass . '/'.$this->owner->ID,
 			'CommentsEnabled' 			=> $enabled,
+			'Parent'					=> $this->owner,
 			'AddCommentForm'			=> $form,
 			'ModeratedSubmitted'		=> $moderatedSubmitted,
 			'Comments'					=> $this->Comments()
